@@ -31,7 +31,9 @@ class OpponentBridge:
         try:
             stat=self.roster_path.stat()
             stamp=(stat.st_mtime_ns,stat.st_size)
-            if stamp==self.file_stamp or not 0<=time.time()-stat.st_mtime<=1.5:return
+            # Windows file timestamps can lead the wall clock by a small tick.
+            # Allow that skew without accepting genuinely future or stale files.
+            if stamp==self.file_stamp or not -.25<=time.time()-stat.st_mtime<=1.5:return
             self.file_stamp=stamp
             if stat.st_size>65507:raise ValueError('Roster is too large')
             latest=self.decode(self.roster_path.read_bytes())

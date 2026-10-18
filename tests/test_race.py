@@ -356,6 +356,20 @@ def test_local_file_roster_works_without_a_udp_sender_and_expires(tmp_path):
     finally:bridge.close()
 
 
+@pytest.mark.parametrize(('age','available'),[(-.02,True),(-1,False),(2,False)])
+def test_file_roster_tolerates_small_windows_timestamp_skew_only(tmp_path,monkeypatch,age,available):
+    import os
+    path=tmp_path/'roster.json';path.write_text(json.dumps(payload()))
+    now=time.time()
+    os.utime(path,(now-age,now-age))
+    monkeypatch.setattr('coach.opponents.time.time',lambda:now)
+    bridge=OpponentBridge(port=0,roster_path=path)
+    try:
+        result=bridge.enrich(car(car='test_car',track='test_track'))
+        assert result.opponents_available is available
+    finally:bridge.close()
+
+
 def test_missing_socket_in_ac_does_not_prevent_plugin_loading_or_file_output(tmp_path,monkeypatch):
     import builtins
     plugin=Path(__file__).resolve().parents[1]/'ac-plugin'/'ApexBridge'/'ApexBridge.py'
