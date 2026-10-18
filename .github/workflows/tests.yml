@@ -1,0 +1,33 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install development dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Test telemetry and local API
+        run: python -m pytest -q
+      - name: Check dashboard syntax
+        run: node --check web/app.js
+      - name: Test dashboard logic
+        shell: pwsh
+        run: |
+          $testFiles = (Get-ChildItem tests -Filter '*.test.mjs').FullName
+          node --test @testFiles
